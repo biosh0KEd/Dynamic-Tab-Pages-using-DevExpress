@@ -1,0 +1,25 @@
+
+
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: absolute;
+}
+
+
+.main, .inside-main, .content {
+    height: inherit;
+}
+
+
+.cerrar-tab {
+    font-size: 13px !important;
+    position: relative;
+    left: 1em;
+    bottom: 0.5em;
+}
+
+.cerrar-tab:hover{
+    color: var(--gray)
+}

@@ -1,0 +1,164 @@
+﻿@using menuAsp.Data.Models.NavBar;
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Menú</title>
+    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />    
+    <link href="~/css/devextreme/bootstrap.css" rel="stylesheet" />
+    <link href="~/css/devextreme/dx.common.css" rel="stylesheet" />    
+    <link href="~/css/devextreme/dx.light.css" rel="stylesheet" />
+    <script src="~/js/devextreme/jquery.js"></script>
+    <script src="~/js/devextreme/bootstrap.js"></script>
+    <script src="~/js/devextreme/dx.all.js"></script>   
+    <script src="~/js/devextreme/aspnet/dx.aspnet.mvc.js"></script>
+    <script src="~/js/devextreme/aspnet/dx.aspnet.data.js"></script>
+    <link rel="stylesheet" href="~/@(nameof(menuAsp)).styles.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+
+<body>
+    @{
+        this.IgnoreBody();
+    }
+    <script>
+        //#region Variables Globales
+        var tabPanel;
+        var ds = [];
+        var dsNumber = 0;
+        //#endregion
+
+        function CrearPagina(item){
+            ds.push({
+                id: dsNumber,
+                text: item.Nombre,
+                template: function () {
+                    return $('<div/>')
+                        .attr({ id: `Page${dsNumber}`});                        
+                }
+            });            
+            $.ajax({
+                url: "@Url.Action("PartialView", "Pages")",
+                type: "post", //send it through get method
+                data: JSON.stringify(item),
+                contentType: "application/json; charset=utf-8",                    
+                success: function (data) {
+                    //Do Something
+                    console.log("Success");                    
+                    $(`#Page${dsNumber}`).html(data);
+                    dsNumber++;                    
+                    tabPanel.option("selectedIndex", ds.length - 1);
+                },
+                error: function (xhr) {
+                    //Do Something to handle error
+                    console.log("error");
+                }
+            });                        
+            tabPanel.getDataSource().reload();            
+        }
+
+        function onInitialized(e) {           
+            tabPanel = e.component;
+            let item = {
+                Id: 2,
+                Categoria: 1,
+                Nombre: "Home",
+                Componente: "Home",
+                Model: "HomeModel"
+            }
+            CrearPagina(item);
+        }
+
+        function titleTemplate(itemData, itemIndex, itemElement) {
+            itemElement.append(
+                $("<span>")
+                    .text(`${itemData.text}`)
+            );
+            if (itemData.id !== 0) {
+                itemElement.append(
+                    $("<i>")
+                        .addClass("dx-icon")
+                        .addClass("dx-icon-close")
+                        .addClass("cerrar-tab")
+                        .click(function () { closeButtonHandler(itemData); })                        
+                );
+            }
+        }    
+
+        function closeButtonHandler(itemData) {
+            var tabPanelItems = tabPanel.option("items").slice();
+            var index = tabPanelItems.indexOf(itemData);
+
+            tabPanelItems.splice(index, 1);
+            if (index >= tabPanelItems.length && index > 0) tabPanel.option("selectedIndex", index - 1);
+            tabPanel.option("items", tabPanelItems);
+
+            ds.splice(index, 1);
+            //updateButtonsState(tabPanelItems);
+        }        
+
+        function treeViewItemClick(e) {            
+            var item = e.itemData;
+            if (item.Componente !== ""){                
+                CrearPagina(item);
+            }          
+        }
+
+        function mapData(item) {
+            if (item.Image) {
+                item.icon = item.Image;
+            }
+            return item;
+        }     
+    </script>
+
+    <nav class="navbar header-navbar p-0">
+        <button type="button" class="navbar-toggler bg-primary d-block" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>        
+    </nav>
+
+    <main role="main" class="main">
+        <div class="d-flex inside-main">                       
+            <div class="p-2 flex-shrink-1 sidebar">
+                <div id="navbar" class="collapse navbar-collapse show">
+                   @(Html.DevExtreme().TreeView()
+                        .ID("navBar-treeview")
+                        .DataSource(EnlacesDelNavbar.Enlaces)
+                        .DataSourceOptions(o => o.Map("mapData"))
+                        .DataStructure(TreeViewDataStructure.Plain)
+                        .ParentIdExpr("Categoria")
+                        .KeyExpr("Id")
+                        .DisplayExpr("Nombre")
+                        .ExpandedExpr("Expanded")
+                        .Width(150)
+                        .OnItemClick("treeViewItemClick")
+                   )                   ​                                       
+                </div>
+            </div>            
+            <div class="p-2 w-100 content"> 
+                @(Html.DevExtreme().TabPanel()
+                    .ID("tabPanel")  
+                    .Height("inherit")
+                    .DataSource(new JS("ds"))                    
+                    .ItemTitleTemplate(new JS("titleTemplate"))
+                    .ItemTemplate(@<text>        
+                        <div id="content-pages">
+                        </div>
+                    </text>)
+                    .DeferRendering(false)
+                    .ShowNavButtons(true)
+                    .RepaintChangesOnly(true)
+                    .OnInitialized("onInitialized")                    
+                )
+            </div>
+        </div>               
+    </main>
+</body>
+</html>
